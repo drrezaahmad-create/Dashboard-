@@ -78,7 +78,7 @@ const AddProduct = ({ openAddModal, setOpenAddModal }) => {
       formData.append("availability", values.availability);
       formData.append(
         "productUrl",
-        `http://10.10.20.48:3000/product/${productId}`
+        `http://13.134.227.59/product/${productId}`
       );
       const res = await addProduct(formData).unwrap();
       message.success(res.message || "Product added successfully!");
