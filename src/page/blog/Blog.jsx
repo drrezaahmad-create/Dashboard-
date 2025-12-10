@@ -1,52 +1,52 @@
 import { Calendar, Eye, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import PageHeading from "../../shared/PageHeading"; 
+import PageHeading from "../../shared/PageHeading";
 import { SearchInput } from "../../components/search/SearchInput";
 import { IoSearch } from "react-icons/io5";
 import { FiPlus } from "react-icons/fi";
 import AddBlog from "./AddBlog";
 import { useState } from "react";
 import { useDeleteBlogMutation, useGetBlogQuery } from "../redux/api/blogApi";
-import { Input, Modal, Pagination, message } from "antd";
+import { Input, Modal, Pagination, Popconfirm, message } from "antd";
 import { imageUrl } from "../redux/api/baseApi";
 import EditBlog from "./EditBlog";
 import { SearchOutlined } from "@ant-design/icons";
 const Blog = () => {
-   const [search, setSearch] = useState("");
+  const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
   const handlePageChange = (page) => setCurrentPage(page);
-  const { data: blogData } = useGetBlogQuery({search, page: currentPage, limit: pageSize});
+  const { data: blogData } = useGetBlogQuery({
+    search,
+    page: currentPage,
+    limit: pageSize,
+  });
   const [openAddModal, setOpenAddModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [currentBlog, setCurrentBlog] = useState(null);
-  const [deleteBlogs] = useDeleteBlogMutation()
+  const [deleteBlogs] = useDeleteBlogMutation();
   const navigate = useNavigate();
-const [selectedBlogs, setSelectedCategory] = useState(null);
+  const [selectedBlogs, setSelectedCategory] = useState(null);
   const showAddModal = () => {
     setCurrentBlog(null);
     setOpenAddModal(true);
   };
 
   const handleEdit = (blog) => {
-setSelectedCategory(blog);
+    setSelectedCategory(blog);
     setEditModal(true);
   };
 
-  const handleDelete =async (id) => {
-
-
-     try {
+  const handleDelete = async (id) => {
+    try {
       const res = await deleteBlogs(id).unwrap();
       message.success(res?.message || "Blog deleted successfully");
-     
     } catch (error) {
       console.error(error);
       message.error(error?.data?.message || "Failed to delete blog");
     }
   };
-
 
   const handleView = (blog) => {
     setCurrentBlog(blog);
@@ -57,7 +57,6 @@ setSelectedCategory(blog);
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-2">
         <PageHeading title="Blog" />
         <div className="flex flex-col md:flex-row justify-center items-center gap-4 w-full md:w-auto">
-         
           <Input
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name..."
@@ -118,13 +117,16 @@ setSelectedCategory(blog);
                     >
                       <Edit className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(blog._id)}
-                      className="p-2 text-red-600"
-                      title="Delete"
+                    <Popconfirm
+                      title="Are you sure to delete this Blog?"
+                      okText="Yes"
+                      cancelText="No"
+                      onConfirm={() => handleDelete(blog._id)}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      <button className="p-2 text-red-600" title="Delete">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </Popconfirm>
                   </div>
                 </div>
               </div>
@@ -136,7 +138,7 @@ setSelectedCategory(blog);
           </div>
         )}
       </div>
-<div className="mt-4 flex justify-center ">
+      <div className="mt-4 flex justify-center ">
         <div className="bg-white px-2 py-1 rounded-md shadow-md">
           <Pagination
             current={currentPage}
@@ -154,9 +156,11 @@ setSelectedCategory(blog);
         currentBlog={currentBlog}
       />
 
-      <EditBlog editModal={editModal}
+      <EditBlog
+        editModal={editModal}
         setEditModal={setEditModal}
-        selectedBlogs={selectedBlogs}></EditBlog>
+        selectedBlogs={selectedBlogs}
+      ></EditBlog>
 
       {/* View Modal */}
       <Modal

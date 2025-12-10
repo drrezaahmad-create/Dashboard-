@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Table, Modal, message, Button, Space } from "antd";
+import { Table, Modal, message, Button, Space, Popconfirm } from "antd";
 import PageHeading from "../../shared/PageHeading";
 import { FiPlus, FiEye, FiEdit3, FiTrash2 } from "react-icons/fi";
 import Addprocedue from "./Addprocedue";
@@ -100,13 +100,16 @@ const ProcedureGuide = () => {
           >
             Edit
           </Button>
-          <Button
-            danger
-            icon={<FiTrash2 />}
-            onClick={() => handleDeleteClick(record?._id)}
+          <Popconfirm
+            title="Are you sure to delete this Procedure Guide?"
+            okText="Yes"
+            cancelText="No"
+            onConfirm={() => handleDeleteClick(record?._id)}
           >
-            Delete
-          </Button>
+            <Button danger icon={<FiTrash2 />}>
+              Delete
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -134,7 +137,6 @@ const ProcedureGuide = () => {
         dataSource={procedures}
         rowKey="_id"
         pagination={false}
-    
       />
 
       {/* Add Modal */}

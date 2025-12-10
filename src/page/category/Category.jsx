@@ -174,18 +174,16 @@ export default function Category() {
                 >
                   <FiEdit3 className="h-4 w-4" />
                 </button>
-                     <Popconfirm
-            title="Are you sure to delete this brand?"
-            okText="Yes"
-            cancelText="No"
-            onConfirm={() => handleDelete(item)}
-          >
-                <button
-                  
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                <Popconfirm
+                  title="Are you sure to delete this Category?"
+                  okText="Yes"
+                  cancelText="No"
+                  onConfirm={() => handleDelete(item)}
                 >
-                  <FiTrash2 className="h-4 w-4" />
-                </button></Popconfirm>
+                  <button className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors">
+                    <FiTrash2 className="h-4 w-4" />
+                  </button>
+                </Popconfirm>
               </div>
             </div>
           </div>
