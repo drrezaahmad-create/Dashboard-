@@ -9,6 +9,7 @@ import {
   Input,
   Button,
   Image,
+  Popconfirm,
 } from "antd";
 import { IoEyeOutline, IoTrashOutline } from "react-icons/io5";
 import { BiEditAlt } from "react-icons/bi";
@@ -27,24 +28,25 @@ export default function AllProducts() {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [form] = Form.useForm();
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
-  const handlePageChange = (page) => setCurrentPage(page);
+  // For custom delete confirmation
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [confirmInput, setConfirmInput] = useState("");
 
-  const {
-    data: getAllProducts,
-    isLoading,
-    isError,
-  } = useGetProductsQuery({ search, page: currentPage, limit: pageSize });
+  const { data: getAllProducts, isLoading, isError } = useGetProductsQuery({
+    search,
+    page: currentPage,
+    limit: pageSize,
+  });
 
-  const [deleteData] = useDeleteProductsMutation();
+  const [deleteData, { isLoading: deleting }] = useDeleteProductsMutation();
   const products = getAllProducts?.data || [];
 
   const showAddModal = () => {
-    form.resetFields();
     setOpenAddModal(true);
   };
 
@@ -53,30 +55,44 @@ export default function AllProducts() {
     setEditModal(true);
   };
 
-  const handleDelete = async (id) => {
+  // Open custom delete modal
+  const handleDeleteClick = (product) => {
+    setProductToDelete(product);
+    setConfirmInput("");
+    setDeleteModalVisible(true);
+  };
+
+  // Confirm and delete
+  const confirmDelete = async () => {
+    if (confirmInput.toLowerCase() !== "delete") {
+      message.error("Please type 'delete' to confirm");
+      return;
+    }
+
     try {
-      const res = await deleteData(id).unwrap();
-      message.success(res?.message);
+      await deleteData(productToDelete._id).unwrap();
+      message.success("Product deleted successfully");
+      setDeleteModalVisible(false);
+      setProductToDelete(null);
     } catch (err) {
-      message.error(err?.data?.message);
+      message.error(err?.data?.message || "Failed to delete product");
     }
   };
 
   if (isLoading)
     return (
-      <div className="flex justify-center items-center h-[50vh]">
+      <div className="flex justify-center items-center h-[60vh]">
         <Spin size="large" />
       </div>
     );
 
   if (isError)
     return (
-      <div className="text-center text-red-500 mt-10">
+      <div className="text-center text-red-500 text-xl mt-20">
         Failed to load products!
       </div>
     );
 
-  // Table Columns
   const columns = [
     {
       title: "Image",
@@ -86,9 +102,10 @@ export default function AllProducts() {
         <Image
           src={`${imageUrl}${images?.[0]}`}
           alt="product"
-          width={60}
-          height={60}
-          className="object-contain rounded-md border"
+          width={70}
+          height={70}
+          className="object-cover rounded-lg border"
+          fallback="https://via.placeholder.com/70"
         />
       ),
     },
@@ -96,13 +113,14 @@ export default function AllProducts() {
       title: "Name",
       dataIndex: "name",
       key: "name",
-      render: (text) => <span className="font-medium">{text}</span>,
+      render: (text) => <span className="font-semibold text-gray-800">{text}</span>,
     },
     {
       title: "Description",
       dataIndex: "description",
       key: "description",
       ellipsis: true,
+      width: 200,
     },
     {
       title: "Brand",
@@ -115,12 +133,12 @@ export default function AllProducts() {
       key: "category",
     },
     {
-      title: "Price ($)",
+      title: "Price",
       dataIndex: "price",
       key: "price",
       render: (price) => (
-        <span className="text-[#136BFB] font-semibold">
-          ${price?.toFixed(2)}
+        <span className="text-lg font-bold text-green-600">
+          {Number(price).toFixed(2)}
         </span>
       ),
     },
@@ -128,28 +146,29 @@ export default function AllProducts() {
       title: "Action",
       key: "action",
       render: (_, record) => (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           <Link to={`/view-product/${record?.productId}`}>
             <Button
-              icon={<IoEyeOutline />}
-              title="View"
-              className="flex items-center justify-center"
+              icon={<IoEyeOutline className="text-blue-600" />}
+              size="middle"
+              className="border-blue-200 hover:border-blue-300"
             />
           </Link>
 
           <Button
-            icon={<BiEditAlt />}
+            icon={<BiEditAlt className="text-green-600" />}
             onClick={() => handleEdit(record)}
-            title="Edit"
-            className="flex items-center justify-center"
+            size="middle"
+            className="border-green-200 hover:border-green-300"
           />
 
+          {/* Custom Delete with Input Confirmation */}
           <Button
-            icon={<IoTrashOutline />}
-            onClick={() => handleDelete(record?._id)}
+            icon={<IoTrashOutline className="text-red-600" />}
             danger
-            title="Delete"
-            className="flex items-center justify-center"
+            size="middle"
+            onClick={() => handleDeleteClick(record)}
+            className="border-red-200 hover:border-red-300"
           />
         </div>
       ),
@@ -159,51 +178,103 @@ export default function AllProducts() {
   return (
     <main className="pb-10">
       {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <PageHeading title="All Products" />
 
-        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <Input
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name..."
-            prefix={<SearchOutlined />}
-            style={{ maxWidth: "300px", height: "40px" }}
+            placeholder="Search products..."
+            prefix={<SearchOutlined className="text-gray-400" />}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            style={{ width: 280, height: 42 }}
+            allowClear
           />
 
           <Button
             type="primary"
+            size="large"
             onClick={showAddModal}
-            style={{ height: "40px" }}
+            className="bg-[#115E59] hover:bg-teal-700 border-none"
           >
-            + Add Product
+            + Add New Product
           </Button>
         </div>
       </header>
 
-      {/* Product Table */}
-      <Table
-        dataSource={products}
-        columns={columns}
-        rowKey={(record) => record._id}
-        pagination={false}
-        bordered
-        className="shadow-sm rounded-md"
-      />
+      {/* Table */}
+      <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        <Table
+          columns={columns}
+          dataSource={products}
+          rowKey="_id"
+          pagination={false}
+          scroll={{ x: 1000 }}
+        />
 
-      {/* Pagination */}
-      <div className="mt-4 flex justify-center ">
-        <div className="bg-white px-2 py-1 rounded-md shadow-md">
+        {/* Pagination */}
+        <div className="p-4 border-t bg-gray-50 flex justify-center">
           <Pagination
             current={currentPage}
             pageSize={pageSize}
             total={getAllProducts?.meta?.total || 0}
-            onChange={handlePageChange}
+            onChange={setCurrentPage}
             showSizeChanger={false}
+            className="text-center"
           />
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Custom Delete Confirmation Modal */}
+      <Modal
+        title={<span className="text-red-600 font-bold">Confirm Delete</span>}
+        open={deleteModalVisible}
+        onCancel={() => setDeleteModalVisible(false)}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => setDeleteModalVisible(false)}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            loading={deleting}
+            onClick={confirmDelete}
+            disabled={confirmInput.toLowerCase() !== "delete"}
+          >
+            Delete Product
+          </Button>,
+        ]}
+        centered
+        width={420}
+      >
+        <div className="py-6">
+          <p className="text-gray-700 mb-4">
+            This action <strong>cannot be undone</strong>. This will permanently delete the product: <span className="font-bold text-md ">
+            "{productToDelete?.name}"
+          </span>
+          </p>
+          
+          <p className="text-sm text-gray-600 mb-4">
+            Please type <span className="font-bold text-red-600">delete</span> to confirm:
+          </p>
+          <Input
+            placeholder="Type 'delete' here"
+            value={confirmInput}
+            onChange={(e) => setConfirmInput(e.target.value)}
+            className="text-lg"
+            autoFocus
+          />
+        </div>
+      </Modal>
+
+      {/* Other Modals */}
       <AddProduct
         openAddModal={openAddModal}
         setOpenAddModal={setOpenAddModal}

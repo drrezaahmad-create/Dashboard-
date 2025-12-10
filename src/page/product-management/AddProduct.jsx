@@ -12,8 +12,11 @@ import {
 } from "antd";
 import {
   useAddProductsMutation,
+  useGetBrandsAllQuery,
   useGetBrandsQuery,
   useGetCategroyAllQuery,
+  useGetCategroysQuery,
+  useGetFieldCategroyAllQuery,
   useGetProcedureQuery,
 } from "../redux/api/productManageApi";
 
@@ -39,8 +42,8 @@ const AddProduct = ({ openAddModal, setOpenAddModal }) => {
   const [fileList, setFileList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const { data: brands } = useGetBrandsQuery();
-  const { data: category } = useGetCategroyAllQuery();
+  const { data: brands } = useGetBrandsAllQuery({limit: '100'});
+  const { data: category } = useGetCategroysQuery({limit: '100'});
   const { data: procedure } = useGetProcedureQuery();
 
   const [addProduct] = useAddProductsMutation();
@@ -101,7 +104,7 @@ const AddProduct = ({ openAddModal, setOpenAddModal }) => {
 
   return (
     <Modal
-      title="Add New Product"
+      title="dd New Product"
       open={openAddModal}
       onCancel={handleCancel}
       footer={null}

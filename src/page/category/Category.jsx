@@ -8,6 +8,7 @@ import {
   Upload,
   Spin,
   Pagination,
+  Popconfirm,
 } from "antd";
 import { FiEdit3, FiTrash2, FiPlus } from "react-icons/fi";
 import PageHeading from "../../shared/PageHeading";
@@ -173,12 +174,18 @@ export default function Category() {
                 >
                   <FiEdit3 className="h-4 w-4" />
                 </button>
+                     <Popconfirm
+            title="Are you sure to delete this brand?"
+            okText="Yes"
+            cancelText="No"
+            onConfirm={() => handleDelete(item)}
+          >
                 <button
-                  onClick={() => handleDelete(item)}
+                  
                   className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
                 >
                   <FiTrash2 className="h-4 w-4" />
-                </button>
+                </button></Popconfirm>
               </div>
             </div>
           </div>

@@ -1,53 +1,62 @@
-import  { useState, useRef, useEffect, } from 'react';
-import JoditEditor from 'jodit-react';
-import { FaArrowLeft } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from "react";
+import JoditEditor from "jodit-react";
+import { FaArrowLeft } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
-import { message, Spin } from 'antd';
-import { useGetPrivecyQuery,  useUpdatePrivecyMutation } from '../redux/api/metaDataApi';
-import PageHeading from '../../shared/PageHeading';
-
-
+import { message, Spin } from "antd";
+import {
+  useGetPrivecyQuery,
+  useUpdatePrivecyMutation,
+} from "../redux/api/metaDataApi";
+import PageHeading from "../../shared/PageHeading";
 
 const PrivacyPolicy = () => {
-const [updateTerms] = useUpdatePrivecyMutation()
-const {data:termData} = useGetPrivecyQuery()
-console.log(termData)
+  const [updateTerms] = useUpdatePrivecyMutation();
+  const { data: termData } = useGetPrivecyQuery();
+  console.log(termData);
   const editor = useRef(null);
-  const [content, setContent] = useState('');
-   const [isLoading, setLoading] = useState(false)
-  const navigate = useNavigate(); 
-const handleTerms = async () => {
-  const data = { content };
+  const [content, setContent] = useState("");
+  const [isLoading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const handleTerms = async () => {
+    const data = { content };
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const res = await updateTerms(data).unwrap();
+      const res = await updateTerms(data).unwrap();
 
-    message.success(res?.message || "Terms updated successfully!");
-  } catch (error) {
-    console.error("Error updating terms:", error);
-    message.error(error?.data?.message || "Failed to update terms. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+      message.success(res?.message || "Terms updated successfully!");
+    } catch (error) {
+      console.error("Error updating terms:", error);
+      message.error(
+        error?.data?.message || "Failed to update terms. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const config = {
-      readonly: false,
-      placeholder: 'Start typings...',
-      style: {
-          height: 600,
-      },
-      buttons: [
-          'image', 'fontsize', 'bold', 'italic', 'underline', '|',
-          'font', 'brush',
-          'align'
-      ]
-  }
+    readonly: false,
+    placeholder: "Start typings...",
+    style: {
+      height: 600,
+    },
+    buttons: [
+      "image",
+      "fontsize",
+      "bold",
+      "italic",
+      "underline",
+      "|",
+      "font",
+      "brush",
+      "align",
+    ],
+  };
 
-   useEffect(() => {
+  useEffect(() => {
     setContent(termData?.data?.content);
   }, [termData]);
 
@@ -59,22 +68,17 @@ const handleTerms = async () => {
         value={content}
         config={config}
         tabIndex={1}
-        onBlur={newContent => setContent(newContent)}
-        onChange={newContent => { }}
+        onBlur={(newContent) => setContent(newContent)}
+        onChange={(newContent) => {}}
       />
-      
 
-     <div className="mt-5 flex justify-center">
+      <div className="mt-5 flex justify-center">
         <button
-       onClick={handleTerms}
-       disabled={isLoading}
+          onClick={handleTerms}
+          disabled={isLoading}
           className="bg-[#4444ff] py-2 px-4 rounded text-white"
         >
-            {isLoading ? (
-                <Spin size="small" /> 
-              ) : (
-                "Update"
-              )}
+          {isLoading ? <Spin size="small" /> : "Update"}
         </button>
       </div>
     </div>

@@ -12,8 +12,10 @@ import {
   Spin,
 } from "antd";
 import {
+  useGetBrandsAllQuery,
   useGetBrandsQuery,
   useGetCategroyAllQuery,
+  useGetCategroysQuery,
   useGetProcedureQuery,
   useUpdateProductsMutation,
 } from "../redux/api/productManageApi";
@@ -28,8 +30,8 @@ const EditProduct = ({ editModal, setEditModal, selectedProduct }) => {
   const [loading, setLoading] = useState(false);
   const [originalValues, setOriginalValues] = useState({}); // <-- original data
 
-  const { data: brands } = useGetBrandsQuery();
-  const { data: category } = useGetCategroyAllQuery();
+ const { data: brands } = useGetBrandsAllQuery({limit: '100'});
+  const { data: category } = useGetCategroysQuery({limit: '100'});
   const { data: procedure } = useGetProcedureQuery();
   const [updateProduct] = useUpdateProductsMutation();
 
