@@ -33,9 +33,9 @@ console.log(notificationData)
         notificationData?.map((item) => (
           <div
             key={item._id}
-            onClick={() => handleMarkAsRead(item._id)}
-            className={`relative p-3 border rounded-lg mb-3 cursor-pointer transition ${
-              item.isRead ? "bg-white" : "bg-red-200"
+           
+            className={`relative p-3 border rounded-lg mb-3 transition ${
+              item.isRead ? "bg-white" : "bg-blue-100"
             }`}
           >
             <h3 className="font-semibold text-gray-900">{item.title}</h3>
@@ -45,7 +45,8 @@ console.log(notificationData)
             <p className="text-xs text-gray-500 mt-1">
               {new Date(item.createdAt).toLocaleDateString()} •{" "}
               {new Date(item.createdAt).toLocaleTimeString()}
-            </p>
+            </p> 
+            <button  onClick={() => handleMarkAsRead(item._id)} className="mt-1">Read</button>
           </div>
         ))
       ) : (
