@@ -10,6 +10,10 @@ import {
   Button,
   Image,
   Popconfirm,
+  Select,
+  Tag,
+  Switch,
+  Tooltip,
 } from "antd";
 import { IoEyeOutline, IoTrashOutline } from "react-icons/io5";
 import { BiEditAlt } from "react-icons/bi";
@@ -20,15 +24,19 @@ import EditProduct from "./EditProduct";
 import {
   useDeleteProductsMutation,
   useGetProductsQuery,
+  useTogglePublishProductsMutation,
 } from "../redux/api/productManageApi";
 import { imageUrl } from "../redux/api/baseApi";
 import { SearchOutlined } from "@ant-design/icons";
+
+const { Option } = Select;
 
 export default function AllProducts() {
   const [openAddModal, setOpenAddModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
@@ -41,9 +49,11 @@ export default function AllProducts() {
     search,
     page: currentPage,
     limit: pageSize,
+    isPublished: statusFilter,
   });
 
   const [deleteData, { isLoading: deleting }] = useDeleteProductsMutation();
+  const [togglePublish] = useTogglePublishProductsMutation();
   const products = getAllProducts?.data || [];
 
   const showAddModal = () => {
@@ -53,6 +63,16 @@ export default function AllProducts() {
   const handleEdit = (product) => {
     setSelectedProduct(product);
     setEditModal(true);
+  };
+
+  const handleTogglePublish = async (record) => {
+    try {
+      await togglePublish(record._id).unwrap();
+      const nextState = record.isPublished === false ? "Public (Visible on website)" : "Private (Hidden from website)";
+      message.success(`Product is now ${nextState}`);
+    } catch (err) {
+      message.error(err?.data?.message || "Failed to toggle status");
+    }
   };
 
   // Open custom delete modal
@@ -121,6 +141,9 @@ export default function AllProducts() {
       key: "description",
       ellipsis: true,
       width: 200,
+      render: (text) => (
+        <span dangerouslySetInnerHTML={{ __html: text ? text.replace(/<[^>]+>/g, '') : '' }} />
+      ),
     },
     {
       title: "Brand",
@@ -138,9 +161,30 @@ export default function AllProducts() {
       key: "price",
       render: (price) => (
         <span className="text-lg font-bold text-green-600">
-          {Number(price).toFixed(2)}
+          £{Number(price).toFixed(2)}
         </span>
       ),
+    },
+    {
+      title: "Status",
+      key: "isPublished",
+      render: (_, record) => {
+        const isPub = record.isPublished !== false;
+        return (
+          <div className="flex items-center gap-2">
+            <Tag color={isPub ? "green" : "volcano"} className="font-semibold px-2 py-1 rounded-md border-0">
+              {isPub ? "🌐 Public" : "🔒 Private"}
+            </Tag>
+            <Tooltip title={isPub ? "Click to make Private (Lock)" : "Click to Publish on Website"}>
+              <Switch
+                size="small"
+                checked={isPub}
+                onChange={() => handleTogglePublish(record)}
+              />
+            </Tooltip>
+          </div>
+        );
+      },
     },
     {
       title: "Action",
@@ -189,9 +233,22 @@ export default function AllProducts() {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            style={{ width: 280, height: 42 }}
+            style={{ width: 220, height: 42 }}
             allowClear
           />
+
+          <Select
+            value={statusFilter}
+            onChange={(val) => {
+              setStatusFilter(val);
+              setCurrentPage(1);
+            }}
+            style={{ width: 170, height: 42 }}
+          >
+            <Option value="all">Filter: All Statuses</Option>
+            <Option value="true">🌐 Public Only</Option>
+            <Option value="false">🔒 Private Only</Option>
+          </Select>
 
           <Button
             type="primary"

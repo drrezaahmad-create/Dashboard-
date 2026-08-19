@@ -7,6 +7,17 @@ import {
 } from "../redux/api/productManageApi";
 import { imageUrl } from "../redux/api/baseApi";
 
+const formatDescription = (desc) => {
+  if (!desc) return "";
+  if (!/<[a-z][\s\S]*>/i.test(desc)) {
+    return desc
+      .split(/\r?\n\r?\n/)
+      .map((para) => `<p class="mb-3">${para.replace(/\r?\n/g, '<br />')}</p>`)
+      .join("");
+  }
+  return desc;
+};
+
 export default function ViewProduct() {
   const { id } = useParams();
   const productId = id;
@@ -87,9 +98,10 @@ export default function ViewProduct() {
             </span>
           </div>
           <div className="space-y-2">
-            <p className="text-[#9F9C96] leading-relaxed">
-              {product?.description}
-            </p>
+            <div
+              className="text-[#9F9C96] leading-relaxed [&_ul]:list-disc [&_ul]:ml-5 [&_ol]:list-decimal [&_ol]:ml-5 [&_p]:mb-2"
+              dangerouslySetInnerHTML={{ __html: formatDescription(product?.description) }}
+            />
           </div>
 
           <div className="space-y-2">

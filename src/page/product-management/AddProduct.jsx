@@ -1,5 +1,7 @@
+import JoditEditorRaw from "jodit-react";
+const JoditEditor = JoditEditorRaw?.default || JoditEditorRaw;
 import { v4 as uuidv4 } from "uuid";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Modal,
   Form,
@@ -39,14 +41,50 @@ const onPreview = async (file) => {
 
 const AddProduct = ({ openAddModal, setOpenAddModal }) => {
   const [form] = Form.useForm();
+  const editor = useRef(null);
+  const [content, setContent] = useState("");
   const [fileList, setFileList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const { data: brands } = useGetBrandsAllQuery({limit: '100'});
-  const { data: category } = useGetCategroysQuery({limit: '100'});
+  const { data: brands } = useGetBrandsAllQuery({ limit: '100' });
+  const { data: category } = useGetCategroysQuery({ limit: '100' });
   const { data: procedure } = useGetProcedureQuery();
 
   const [addProduct] = useAddProductsMutation();
+
+  const editorConfig = React.useMemo(() => ({
+    readonly: false,
+    placeholder: "Start typing product description...",
+    height: 300,
+    toolbarSticky: false,
+    buttons: [
+      "bold",
+      "italic",
+      "underline",
+      "strikethrough",
+      "|",
+      "ul",
+      "ol",
+      "outdent",
+      "indent",
+      "|",
+      "font",
+      "fontsize",
+      "brush",
+      "paragraph",
+      "|",
+      "align",
+      "undo",
+      "redo",
+      "|",
+      "hr",
+      "link",
+      "fullsize"
+    ],
+    showXPathInStatusbar: false,
+    askBeforePasteHTML: false,
+    askBeforePasteFromWord: false,
+  }), []);
 
   const onChange = ({ fileList: newFileList }) => {
     setFileList(newFileList);
@@ -71,12 +109,15 @@ const AddProduct = ({ openAddModal, setOpenAddModal }) => {
       // Other fields
 
       formData.append("name", values.name);
-      formData.append("description", values.description);
+      formData.append("description", content);
+      formData.append("isPublished", values.isPublished !== undefined ? values.isPublished : true);
       formData.append("price", values.price);
       formData.append("stock", values.stock);
       formData.append("brand", values.brand);
       formData.append("category", values.category);
-      formData.append("procedure", values.procedure);
+      if (values.procedure) {
+        formData.append("procedure", values.procedure);
+      }
       formData.append("productCode", values.productCode);
       formData.append("availability", values.availability);
       formData.append(
@@ -87,6 +128,7 @@ const AddProduct = ({ openAddModal, setOpenAddModal }) => {
       message.success(res.message || "Product added successfully!");
       setOpenAddModal(false);
       form.resetFields();
+      setContent("");
       setFileList([]);
       setLoading(false);
     } catch (error) {
@@ -99,12 +141,13 @@ const AddProduct = ({ openAddModal, setOpenAddModal }) => {
   const handleCancel = () => {
     setOpenAddModal(false);
     form.resetFields();
+    setContent("");
     setFileList([]);
   };
 
   return (
     <Modal
-      title="dd New Product"
+      title="Add New Product"
       open={openAddModal}
       onCancel={handleCancel}
       footer={null}
@@ -146,15 +189,15 @@ const AddProduct = ({ openAddModal, setOpenAddModal }) => {
 
         {/* Description */}
         <Form.Item
-          label="Description"
-          name="description"
-          rules={[{ required: true, message: "Please enter description!" }]}
+          label="Description (Rich Text)"
         >
-          <Input.TextArea
-            style={{ borderRadius: "8px" }}
-            rows={4}
-            placeholder="Enter description"
-            size="large"
+          <JoditEditor
+            ref={editor}
+            value={content}
+            config={editorConfig}
+            tabIndex={1}
+            onBlur={(newContent) => setContent(newContent)}
+            onChange={(newContent) => setContent(newContent)}
           />
         </Form.Item>
 
@@ -239,7 +282,7 @@ const AddProduct = ({ openAddModal, setOpenAddModal }) => {
         <Form.Item
           label="Procedure Guide"
           name="procedure"
-         
+
         >
           <Select
             style={{ height: "44px" }}
@@ -272,14 +315,30 @@ const AddProduct = ({ openAddModal, setOpenAddModal }) => {
           </Select>
         </Form.Item>
 
+        {/* Publish Status */}
+        <Form.Item
+          label="Publish Status (Website Visibility)"
+          name="isPublished"
+          initialValue={true}
+          rules={[{ required: true, message: "Please select publish status!" }]}
+        >
+          <Select
+            style={{ height: "44px" }}
+            placeholder="Select status"
+            size="large"
+          >
+            <Option value={true}>🌐 Public (Show on Website)</Option>
+            <Option value={false}>🔒 Private / Locked (Admin Only)</Option>
+          </Select>
+        </Form.Item>
+
         {/* Submit */}
         <div className="flex justify-end">
           <button
-            className={`w-full py-3 rounded text-white flex justify-center items-center gap-2 transition-all duration-300 ${
-              loading
+            className={`w-full py-3 rounded text-white flex justify-center items-center gap-2 transition-all duration-300 ${loading
                 ? "bg-blue-400 cursor-not-allowed"
                 : "bg-[#3b82f6] hover:bg-blue-500"
-            }`}
+              }`}
             type="submit"
             disabled={loading}
           >

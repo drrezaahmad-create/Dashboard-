@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from "react";
+import JoditEditorRaw from "jodit-react";
+const JoditEditor = JoditEditorRaw?.default || JoditEditorRaw;
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Modal,
   Form,
@@ -26,6 +28,8 @@ const { Option } = Select;
 
 const EditProduct = ({ editModal, setEditModal, selectedProduct }) => {
   const [form] = Form.useForm();
+  const editor = useRef(null);
+  const [content, setContent] = useState("");
   const [fileList, setFileList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [originalValues, setOriginalValues] = useState({}); // <-- original data
@@ -34,6 +38,40 @@ const EditProduct = ({ editModal, setEditModal, selectedProduct }) => {
   const { data: category } = useGetCategroysQuery({limit: '100'});
   const { data: procedure } = useGetProcedureQuery();
   const [updateProduct] = useUpdateProductsMutation();
+
+  const editorConfig = React.useMemo(() => ({
+    readonly: false,
+    placeholder: "Start typing product description...",
+    height: 300,
+    toolbarSticky: false,
+    buttons: [
+      "bold",
+      "italic",
+      "underline",
+      "strikethrough",
+      "|",
+      "ul",
+      "ol",
+      "outdent",
+      "indent",
+      "|",
+      "font",
+      "fontsize",
+      "brush",
+      "paragraph",
+      "|",
+      "align",
+      "undo",
+      "redo",
+      "|",
+      "hr",
+      "link",
+      "fullsize"
+    ],
+    showXPathInStatusbar: false,
+    askBeforePasteHTML: false,
+    askBeforePasteFromWord: false,
+  }), []);
 
   /* ------------------------------------------------------------------ *
    *  1. Fill form + keep original values when modal opens
@@ -50,9 +88,11 @@ const EditProduct = ({ editModal, setEditModal, selectedProduct }) => {
         category: selectedProduct?.category?._id,
         procedure: selectedProduct?.procedure?._id,
         availability: selectedProduct.availability,
+        isPublished: selectedProduct.isPublished !== undefined ? selectedProduct.isPublished : true,
       };
 
       form.setFieldsValue(init);
+      setContent(selectedProduct.description || "");
       setOriginalValues(init);                     // <-- keep copy
       // existing images
       if (selectedProduct.images?.length) {
@@ -79,66 +119,44 @@ const EditProduct = ({ editModal, setEditModal, selectedProduct }) => {
   };
 
   /* ------------------------------------------------------------------ *
-   *  3. Build a **partial** FormData – only changed fields
-   * ------------------------------------------------------------------ */
-  const buildPartialFormData = useCallback(() => {
-    const current = form.getFieldsValue(); // values from the form
-    const formData = new FormData();
-
-    let hasChanges = false;
-
-    // ---- text / select fields -------------------------------------------------
-    const fields = [
-      "name",
-      "description",
-      "price",
-      "stock",
-      "brand",
-      "productCode",
-      "category",
-      "procedure",
-      "availability",
-    ];
-
-    fields.forEach((key) => {
-      if (current[key] !== originalValues[key]) {
-        formData.append(key, current[key]);
-        hasChanges = true;
-      }
-    });
-
-    // ---- images --------------------------------------------------------------
-    //  • keep existing URLs (they are not changed)
-    const existingUrls = fileList
-      .filter((f) => f.url)
-      .map((f) => f.url.replace(imageUrl, ""));
-
-    //  • new files (they are always a change)
-    const newFiles = fileList.filter((f) => f.originFileObj);
-
-    if (existingUrls.length) {
-      formData.append("images", JSON.stringify(existingUrls));
-    }
-    newFiles.forEach((f) => {
-      formData.append("images", f.originFileObj);
-      hasChanges = true;
-    });
-
-    return { formData, hasChanges };
-  }, [form, originalValues, fileList]);
-
-  /* ------------------------------------------------------------------ *
-   *  4. Submit – only if something changed
+   *  Submit Product Update
    * ------------------------------------------------------------------ */
   const handleSubmit = async () => {
     try {
       await form.validateFields(); // Antd validation
-
-      const { formData, hasChanges } = buildPartialFormData();
-
-      
+      const values = form.getFieldsValue();
 
       setLoading(true);
+
+      const formData = new FormData();
+
+      if (values.name) formData.append("name", values.name);
+      formData.append("description", content);
+      if (values.price !== undefined && values.price !== "") formData.append("price", values.price);
+      if (values.stock !== undefined && values.stock !== "") formData.append("stock", values.stock);
+      if (values.brand) formData.append("brand", values.brand);
+      if (values.category) formData.append("category", values.category);
+      if (values.procedure) formData.append("procedure", values.procedure);
+      if (values.productCode) formData.append("productCode", values.productCode);
+      if (values.availability) formData.append("availability", values.availability);
+      formData.append("isPublished", values.isPublished !== undefined ? values.isPublished : true);
+
+      // Existing image URLs (strings)
+      const existingUrls = fileList
+        .filter((f) => f.url)
+        .map((f) => f.url.replace(imageUrl, ""));
+
+      // New file objects
+      const newFiles = fileList.filter((f) => f.originFileObj);
+
+      if (existingUrls.length > 0) {
+        formData.append("images", JSON.stringify(existingUrls));
+      }
+
+      newFiles.forEach((f) => {
+        formData.append("images", f.originFileObj);
+      });
+
       const res = await updateProduct({
         id: selectedProduct._id,
         data: formData,
@@ -149,7 +167,7 @@ const EditProduct = ({ editModal, setEditModal, selectedProduct }) => {
       form.resetFields();
       setFileList([]);
     } catch (err) {
-      console.error(err);
+      console.error("Update product error:", err);
       message.error(err?.data?.message || "Failed to update product.");
     } finally {
       setLoading(false);
@@ -157,7 +175,7 @@ const EditProduct = ({ editModal, setEditModal, selectedProduct }) => {
   };
 
   /* ------------------------------------------------------------------ *
-   *  5. Cancel
+   *  Cancel
    * ------------------------------------------------------------------ */
   const handleCancel = () => {
     setEditModal(false);
@@ -213,11 +231,16 @@ const EditProduct = ({ editModal, setEditModal, selectedProduct }) => {
         </Form.Item>
 
         <Form.Item
-          label="Description"
-          name="description"
-          rules={[{ required: true, message: "Enter description!" }]}
+          label="Description (Rich Text)"
         >
-          <Input.TextArea rows={4} placeholder="Enter description" size="large" />
+          <JoditEditor
+            ref={editor}
+            value={content}
+            config={editorConfig}
+            tabIndex={1}
+            onBlur={(newContent) => setContent(newContent)}
+            onChange={(newContent) => setContent(newContent)}
+          />
         </Form.Item>
     <Form.Item
           label="Product Code"
@@ -294,6 +317,17 @@ const EditProduct = ({ editModal, setEditModal, selectedProduct }) => {
             <Option value="Out of Stock">Out of Stock</Option>
             <Option value="Limited Stock">Limited Stock</Option>
             <Option value="Pre-order">Pre-order</Option>
+          </Select>
+        </Form.Item>
+
+        <Form.Item
+          label="Publish Status (Website Visibility)"
+          name="isPublished"
+          rules={[{ required: true, message: "Select status!" }]}
+        >
+          <Select placeholder="Select visibility status" size="large">
+            <Option value={true}>🌐 Public (Show on Website)</Option>
+            <Option value={false}>🔒 Private / Locked (Admin Only)</Option>
           </Select>
         </Form.Item>
 

@@ -82,3 +82,26 @@ select option {
   border-bottom: 2px solid red !important;
   /* শুধুমাত্র অ্যাক্টিভ ট্যাবের জন্য বর্ডার */
 }
+
+/* Jodit Editor custom style overrides to prevent Tailwind reset from hiding list markers */
+.jodit-container .jodit-wysiwyg ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.jodit-container .jodit-wysiwyg ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.jodit-container .jodit-wysiwyg li {
+  display: list-item !important;
+}
+
+.jodit-container .jodit-wysiwyg p {
+  margin-bottom: 0.5rem !important;
+}

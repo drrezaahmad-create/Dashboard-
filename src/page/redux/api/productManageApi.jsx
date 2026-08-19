@@ -158,9 +158,13 @@ const category = baseApi.injectEndpoints({
     }),
 
     getProducts: builder.query({
-      query: ({ page, limit, search }) => {
+      query: ({ page, limit, search, isPublished }) => {
+        let url = `/products?search=${search || ''}&page=${page || 1}&limit=${limit || 10}`;
+        if (isPublished) {
+          url += `&isPublished=${isPublished}`;
+        }
         return {
-          url: `/products?search=${search}&page=${page}&limit=${limit}`,
+          url,
           method: "GET",
         };
       },
@@ -179,7 +183,7 @@ const category = baseApi.injectEndpoints({
     getSingleProductsUrl: builder.query({
       query: ({ productId }) => {
         return {
-          url: `/products/byid/${productId}`,
+          url: `/products/byid/${productId}?includePrivate=true`,
           method: "GET",
         };
       },
@@ -213,6 +217,16 @@ const category = baseApi.injectEndpoints({
           url: `/products/${id}`,
           method: "PATCH",
           body: data,
+        };
+      },
+      invalidatesTags: ["updateProfile"],
+    }),
+
+    togglePublishProducts: builder.mutation({
+      query: (id) => {
+        return {
+          url: `/products/${id}/toggle-publish`,
+          method: "PATCH",
         };
       },
       invalidatesTags: ["updateProfile"],
@@ -281,6 +295,7 @@ export const {
   useGetSingleProductsQuery,
   useGetProductsQuery,
   useUpdateProductsMutation,
+  useTogglePublishProductsMutation,
   useDeleteProductsMutation,
   useGetCategroysQuery,
   useAddBannerMutation,

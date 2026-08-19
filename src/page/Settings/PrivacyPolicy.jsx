@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import JoditEditor from "jodit-react";
+import JoditEditorRaw from "jodit-react";
+const JoditEditor = JoditEditorRaw?.default || JoditEditorRaw;
 import { FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
